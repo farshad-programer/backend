@@ -21,22 +21,6 @@ export default new (class extends controller {
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(user.password, salt);
 
-    await  bcrypt.genSalt(10, function(err, salt) {
-      bcrypt.hash(user.password, salt, function(err, hash) {
-        if (err) {
-          return this.response({
-            res,
-            code: 400,
-            message: err.message,
-          });
-          
-        }
-        user.password =hash ;
-          // Store hash in your password DB.
-      });
-  });
-
-
     await user.save();
 
     this.response({
