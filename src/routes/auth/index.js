@@ -1,19 +1,21 @@
-import { Router} from 'express';
-  const router = Router();
-import controller from './controller.js';
-import validateLog from './validator.js';
+import { Router } from "express";
+const router = Router();
+import controller from "./controller.js";
+import validateLog from "./validator.js";
 
 router.post(
-  '/register',
+  "/register",
   validateLog.registerValidator(),
   controller.validate,
   controller.register
 );
 
 router.post(
-  '/login',
+  "/login",
   validateLog.loginValidator(),
   controller.validate,
   controller.login
 );
-export default router
+router.get("/", controller.handleRefreshToken);
+router.get("/logout", controller.logout);
+export default router;

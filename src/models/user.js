@@ -6,6 +6,7 @@ const userSchema = new Schema({
   name: { type: String, required: true},
   password: { type: String, required: true},
   isadmin: { type: Boolean, default: false},
+  refreshToken: [String],
 });
 userSchema.plugin(timestamp);
 
