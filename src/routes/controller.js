@@ -1,40 +1,38 @@
 import autoBind from "auto-bind";
-import { validationResult } from 'express-validator';
-import User from './../models/user.js';
-
+import { validationResult } from "express-validator";
+import User from "./../models/user.js";
 export default class {
   constructor() {
     autoBind(this);
     this.User = User;
   }
 
-  validationBody(req,res){
+  validationBody(req, res) {
     const result = validationResult(req);
-    if(!result.isEmpty()){
+    if (!result.isEmpty()) {
       const errors = result.array();
       const messages = [];
-      errors.forEach(err => messages.push(err.msg));
+      errors.forEach((err) => messages.push(err.msg));
       res.status(400).json({
-        message: 'validation error',
-        data: messages
-      })
+        message: "validation error",
+        data: messages,
+      });
       return false;
     }
     return true;
   }
 
-  validate(req,res,next){
-    if(!this.validationBody(req,res)){
+  validate(req, res, next) {
+    if (!this.validationBody(req, res)) {
       return;
     }
     next();
   }
 
-  response({res, message, code=200, data={}}){
+  response({ res, message, code = 200, data = {} }) {
     res.status(code).json({
       message,
-      data
+      data,
     });
   }
-
-}; 
+}

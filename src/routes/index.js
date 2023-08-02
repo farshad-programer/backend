@@ -1,15 +1,16 @@
-import { Router } from 'express';
+import { Router } from "express";
 const router = Router();
-import authRouter from './auth/index.js';
-import userRouter from './user/index.js';
-import adminRouter from './admin/index.js';
-import { isLoggined, isAdmin } from './../middlewares/auth.js' ;
-import error from './../middlewares/error.js';
-
-router.use('/auth', authRouter);
-
-router.use('/user', isLoggined, userRouter);
-router.use('/admin', isLoggined, isAdmin, adminRouter);
+import authRouter from "./auth/index.js";
+import userRouter from "./user/index.js";
+import adminRouter from "./admin/index.js";
+import error from "./../middlewares/error.js";
+import verifyJWT from "./../middlewares/verifyJWT.js";
+import ROLES_LIST from "../../config/roles_list.js";
+import verifyRoles from "./../middlewares/verifyRoles.js";
+router.use("/auth", authRouter);
+verifyJWT
+router.use("/user", verifyJWT, userRouter);
+router.use("/admin", verifyJWT, verifyRoles(ROLES_LIST.Admin), adminRouter);
 
 router.use(error);
 

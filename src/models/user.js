@@ -5,8 +5,13 @@ const userSchema = new Schema({
   email: { type: String, required: true, unique: true},
   name: { type: String, required: true},
   password: { type: String, required: true},
-  isadmin: { type: Boolean, default: false},
+  // isadmin: { type: Boolean, default: false},
   refreshToken: [String],
+  roles: {
+    User: { type: Number, default: 1000 },
+    Editor: Number,
+    Admin: Number,
+  },
 });
 userSchema.plugin(timestamp);
 

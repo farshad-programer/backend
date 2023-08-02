@@ -1,12 +1,11 @@
-import controller from "./../controller.js";
+import controller from "../controller.js";
 import _ from "lodash";
 import bcrypt from "bcrypt";
-import config from "config";
 import jwt from "jsonwebtoken";
 
 export default new (class extends controller {
   async register(req, res) {
-    let user = await this.User.findOne({ email: req.body.email });
+    let user = await this.User.findOne({ email: req.body.email }).exec();
     if (user) {
       return this.response({
         res,
@@ -18,8 +17,7 @@ export default new (class extends controller {
     // user = new this.User({email, name, password});
     user = new this.User(_.pick(req.body, ["name", "email", "password"]));
 
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(user.password, salt);
+    user.password = await bcrypt.hash(user.password, 15);
 
     await user.save();
 
@@ -37,7 +35,7 @@ export default new (class extends controller {
       return this.response({
         res,
         code: 400,
-        message: "invalid eamil or password",
+        message: "invalid eamil or  password",
       });
     }
     const isValid = await bcrypt.compare(req.body.password, user.password);
@@ -45,20 +43,22 @@ export default new (class extends controller {
       return this.response({
         res,
         code: 401,
-        message: "invalid eamil or password",
+        message: "invalid eamil aa or password",
       });
     }
+    const roles = Object.values(user.roles).filter(Boolean);
+
     const accessToken = jwt.sign(
       {
-        userInfo: { _id: user.id },
+        userInfo: { email: user.email, roles },
       },
       process.env.ACCESS_TOKEN_SECRET,
-      { expiresIn: "30s" }
+      { expiresIn: "6s" }
     );
 
     const newRefreshToken = jwt.sign(
       {
-        _id: user.id,
+        email: user.email,
       },
       process.env.REFRESH_TOKEN_SECRET,
       { expiresIn: "1d" }
@@ -70,7 +70,7 @@ export default new (class extends controller {
 
     if (cookies?.jwt) {
       const refreshToken = cookies.jwt;
-      const foundToken = await user.findOne({ refreshToken }).exec();
+      const foundToken = await this.User.findOne({ refreshToken }).exec();
       if (!foundToken) {
         newRefreshTokenArray = [];
       }
@@ -91,11 +91,11 @@ export default new (class extends controller {
       sameSite: "None",
       maxAge: 1000 * 60 * 60 * 24,
     });
+    const data = res.json({ roles, accessToken });
     // ---------------------------------------------
     this.response({
-      res,
+      data,
       message: "successfuly logged in",
-      data: { accessToken },
     });
 
     // const token = jwt.sign({ _id: user.id }, config.get("jwt_key"));
@@ -103,7 +103,7 @@ export default new (class extends controller {
 
   async logout(req, res) {
     const { cookies } = req;
-    if (!cookie?.jwt) return res.sendStatus(204);
+    if (!cookies?.jwt) return res.sendStatus(204);
     const refreshToken = cookies.jwt;
     const user = await this.User.findOne({ refreshToken }).exec();
     if (!user) {
@@ -126,38 +126,43 @@ export default new (class extends controller {
     res.clearCookie("jwt", { httpOnly: true, sameSite: "None", secure: true });
     this.response({ res, code: 204, message: "successfuly logged out" });
   }
-  async handleRefreshToken (req, res) {
+
+
+
+  // ---------------------------handleRefreshToken-------------
+  
+  async handleRefreshToken(req, res) {
     const cookies = req.cookies;
-  
-    if (!cookies?.jwt) return res.sendStatus(401);
-  
+
+    if (!cookies?.jwt) return res.sendStatus(401).json({ message: 'Unauthorized' });
+
     const refreshToken = cookies.jwt;
     res.clearCookie("jwt", { httpOnly: true, sameSite: "None", secure: true });
-  
+
     const foundUser = await this.User.findOne({ refreshToken }).exec();
-  
+
     if (!foundUser) {
       jwt.verify(
         refreshToken,
         process.env.REFRESH_TOKEN_SECRET,
         async (err, decoded) => {
           if (err) return;
-  
-          const hackedUser = await User.findOne({
-            _id: decoded._id,
+
+          const hackedUser = await this.User.findOne({
+            email: decoded.email,
           }).exec();
-  
+
           hackedUser.refreshToken = [];
           await hackedUser.save();
         }
       );
-      return res.sendStatus(403);
+      return res.sendStatus(403).json({ message: 'Forbidden' });
     }
-  
+
     const newRefreshTokenArray = foundUser.refreshToken.filter(
       (rt) => rt !== refreshToken
     );
-  
+    console.log("newRefreshTokenArray :", newRefreshTokenArray);
     jwt.verify(
       refreshToken,
       process.env.REFRESH_TOKEN_SECRET,
@@ -166,36 +171,38 @@ export default new (class extends controller {
           foundUser.refreshToken = [...newRefreshTokenArray];
           await foundUser.save();
         }
-  
-        if (err || foundUser._id !== decoded._id)
+
+        if (err || foundUser.email !== decoded.email)
           return res.sendStatus(403);
-  
+        const roles = Object.values(foundUser.roles);
+
         const accessToken = jwt.sign(
           {
-            userInfo: { _id: decoded._id},
+            userInfo: { email: decoded.email },
+            roles,
           },
           process.env.ACCESS_TOKEN_SECRET,
-          { expiresIn: "10s" }
+          { expiresIn: "6s" }
         );
-  
+
         const newRefreshToken = jwt.sign(
-          { _id: foundUser._id },
+          { email: foundUser.email },
           process.env.REFRESH_TOKEN_SECRET,
           { expiresIn: "1d" }
         );
-  
+
         foundUser.refreshToken = [...newRefreshTokenArray, newRefreshToken];
         await foundUser.save();
-  
+
         res.cookie("jwt", newRefreshToken, {
           httpOnly: true,
           secure: true,
           sameSite: "None",
           maxAge: 24 * 60 * 60 * 1000,
         });
-  
-        res.json({  accessToken });
+
+        res.json({ roles, accessToken });
       }
     );
-  };
+  }
 })();
