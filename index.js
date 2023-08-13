@@ -1,7 +1,7 @@
-import express from "express";
-const app = express();
 import * as dotenv from "dotenv";
 dotenv.config();
+import express from "express";
+const app = express();
 import debug from "debug";
 debug("app:main");
 import mongoose from "mongoose";
@@ -11,14 +11,16 @@ import winston from "winston";
 import AppError from "./src/ErrorControls/AppError.js";
 import credentials from "./src/middlewares/credential.js";
 import configApp from "./startup/config.js";
+logging();
+
 import db from "./startup/db.js";
 import logging from "./startup/logging.js";
 import router from "./src/routes/index.js";
 import cors from "cors";
 import globalErrorHandler from "./src/ErrorControls/errorController.js";
+import fileUpload from "express-fileupload";
 
-logging();
-configApp(app, express, cookieParser, cors, credentials);
+configApp(app, express, cookieParser, cors, credentials,fileUpload);
 db();
 app.use("/api", router);
 app.all("*", (req, res, next) => {

@@ -178,8 +178,8 @@ export default new (class extends controller {
 
         const accessToken = jwt.sign(
           {
-            userInfo: { email: decoded.email },
-            roles,
+            userInfo: { email: decoded.email, roles },
+           
           },
           process.env.ACCESS_TOKEN_SECRET,
           { expiresIn: "6s" }

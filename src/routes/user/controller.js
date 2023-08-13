@@ -7,6 +7,6 @@ export default new (class extends controller {
   }
 
   async me(req, res) {
-    this.response({ res, data: _.pick(req.user, ["name", "email"]) });
+    this.response({ res, data: _.pick(req.user, ["name", "email"]) })
   }
 })();

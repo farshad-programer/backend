@@ -8,6 +8,9 @@ debug("app:main");
 
 
 export default function(){
+  winston.add(new winston.transports.File({filename: 'logfile.log',colorize: true, prettyPrint: true}));
+  winston.add(new winston.transports.Console({colorize: true, prettyPrint: true}));
+  
   process.on('uncaughtException', (ex)=>{
     debug(ex);
     winston.error(ex.message,ex);
@@ -20,5 +23,4 @@ export default function(){
     process.exit(1);
   });
   
-  winston.add(new winston.transports.File({filename: 'logfile.log'}));
 }
